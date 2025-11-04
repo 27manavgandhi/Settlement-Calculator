@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Settlement Calculator</title>
+<style>
+  :root{
+    --fg:#0f172a;--muted:#64748b;--bg:#f8fafc;--card:#fff;--accent:#2563eb;--ok:#16a34a;
+
+    /* tweak these to resize/align the settlement value and small genie */
+    --settle-font: 1.15rem;  /* value size */
+    --genie-size:  64px;     /* small genie height */
+    --value-gap:   10px;     /* gap between value and genie */
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:10px}
+  .card{max-width:720px;width:100%;background:var(--card);border-radius:16px;padding:14px;box-shadow:0 8px 28px rgba(15,23,42,.08)}
+
+  /* Header */
+  .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .head img.logo{width:220px;height:auto}
+  .hi{font-weight:800;color:#be185d;display:flex;align-items:center;gap:6px}
+  .hi img{height:26px}
+
+  /* Mode row */
+  .mode{
+    display:flex; gap:14px; align-items:center; margin:6px 0 4px; color:var(--muted);
+    font-size:.92rem; flex-wrap:wrap;
+  }
+  .mode label{display:inline-flex; align-items:center; gap:6px; cursor:pointer}
+  .mode input[type="radio"]{accent-color:var(--accent)}
+  .mode input[type="checkbox"]{accent-color:var(--accent)}
+
+  /* separate F-Assured row */
+  .fassured-row{
+    display:flex; align-items:center; gap:6px; margin:0 0 8px; color:var(--muted);
+  }
+
+  /* 1st GIF BETWEEN LOGO & INPUTS */
+  .between{display:flex;justify-content:flex-start;margin:0 0 6px}
+  #aladdinGif{height:120px;width:auto;image-rendering:pixelated}
+  @media(max-width:560px){ #aladdinGif{height:90px} }
+
+  /* Inputs */
+  .row{display:grid;grid-template-columns:1fr auto;gap:10px}
+  @media(max-width:560px){.row{grid-template-columns:1fr}}
+  label[for="priceInput"]{font-size:.9rem;color:var(--muted)}
+  input{width:100%;border:1px solid #e2e8f0;border-radius:12px;padding:12px;font-size:1rem}
+  .btns{display:flex;gap:8px;align-items:center}
+  button{padding:12px 14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+  button.ghost{background:#e2e8f0;color:#0f172a}
+
+  /* Results pane */
+  .result{
+    margin-top:10px;background:#f1f5f9;padding:12px;border-radius:12px;
+    position:relative;overflow:hidden;
+  }
+  .line{display:flex;justify-content:space-between;margin:6px 0;align-items:center}
+  .note{margin-top:6px;font-size:.82rem;color:var(--muted)}
+  .warn{color:#dc2626;font-size:.85rem;display:none}
+
+  /* Full-pane GIF */
+  #paneGif{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; border-radius:inherit;
+    display:none; z-index:0; pointer-events:none; opacity:1;
+  }
+  .pane-playing > *:not(#paneGif){ visibility:hidden }
+  .result > *{ position:relative; z-index:1 }
+
+  /* Settlement line */
+  .line.total{
+    display:grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items:center;
+  }
+  .settle-center{
+    display:flex;
+    align-items:center;
+    gap: var(--value-gap);
+    justify-content:center;
+  }
+  #outSettlement{
+    font-weight:900; color:var(--ok);
+    font-size: var(--settle-font);
+    text-align:center;
+  }
+  #genieImg{
+    height: var(--genie-size);
+    width:auto;
+    display:none;
+    pointer-events:none;
+    filter: drop-shadow(0 8px 18px rgba(0,0,0,.12));
+    animation:bounce .6s ease-in-out 3, blink 1s linear 2;
+  }
+  #genieImg.show{ display:inline-block; }
+  @keyframes bounce{0%,100%{transform:translateY(2px)}50%{transform:translateY(-4px)}}
+  @keyframes blink{0%,100%{filter:brightness(1)}50%{filter:brightness(1.2)}}
+
+  
+/* Container for the entire input section */
+.mode, .fassured-row, .between {
+  position: relative !important;
+}
+
+.mode-container {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  margin-bottom: 10px !important;
+}
+
+.left-section {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
+
+.mode {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 5px !important;
+}
+
+.mode strong {
+  margin-bottom: 3px !important;
+}
+
+/* Container for Listing & Selling Price side by side */
+.price-options {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 3rem !important; /* spacing between Listing and Selling */
+  margin-left: 1.2rem !important;
+}
+
+.option.selling {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensures checkbox stays directly under Selling Price */
+.fassured-below {
+  margin-top: 2px !important;
+  margin-left: 1.6rem !important; /* aligns under Selling Price text */
+}
+
+.fassured-below label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.mode label {
+  font-weight: normal !important;
+  white-space: nowrap !important;
+}
+
+#aladdinGif {
+  max-width: 80px !important;
+  height: auto !important;
+  margin-top: 5px !important;
+}
+
+.right-section {
+  text-align: right !important;
+  padding-top: 5px !important;
+}
+
+.hiWifey {
+  font-weight: 600 !important;
+  color: #d10e63 !important;
+  font-size: 16px !important;
+  margin: 0 !important;
+}
+
+/* Responsive fix */
+@media (max-width: 768px) {
+  .mode-container {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .right-section {
+    text-align: left !important;
+    margin-top: 8px !important;
+  }
+}
+
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <img class="logo" src="" alt="Click Crazy Logo">
+      <div class="hi">Hi Wifey <img id="heartGif" src="" alt="💋"></div>
+    </div>
+  
+  <div class="mode-container">
+  <!-- Left section (mode + F-Assured + Genie) -->
+  <div class="left-section">
+    <div class="mode" id="modeBox">
+      <strong>I will enter:</strong>
+      <div class="price-options">
+        <div class="option">
+          <label><input type="radio" name="mode" id="modeLP" value="LP" checked> Listing Price</label>
+        </div>
+        <div class="option selling">
+          <label><input type="radio" name="mode" id="modeSP" value="SP"> Selling Price</label>
+
+          <!-- F-Assured exactly below Selling Price -->
+          <div class="fassured-below">
+            <label for="fAssured">
+              <input type="checkbox" id="fAssured">
+              <span>F-Assured</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Genie image -->
+    <img id="aladdinGif" src="aladdin.gif" alt="Genie">
+  </div>
+</div>
+
+
+  
+  
+
+
+
+    
+ <!-- input row -->
+    <div class="row">
+      <div>
+        <label id="priceLabel" for="priceInput">Listing Price (₹)</label>
+        <input id="priceInput" type="number" value="0" placeholder="Enter amount">
+      </div>
+      <div class="btns" style="align-self:end">
+        <button id="calcBtn" type="button">Calculate</button>
+        <button id="resetBtn" type="button" class="ghost">Reset</button>
+      </div>
+    </div>
+
+    <div class="result" id="pane">
+      <img id="paneGif" src="" alt="Pane Genie">
+
+      <div class="line"><span>Listing Price</span><span id="outLP">₹0.00</span></div>
+      <div class="line"><span><b>Selling Price (Derived)</b></span><span id="outSP">₹0.00</span></div>
+      <hr style="border:none;border-top:1px dashed #cbd5e1;">
+      <div class="line"><span>Fixed Fee</span><span id="outFixed">₹5.00</span></div>
+      <div class="line"><span id="commLabel">Commission (5% of SP)</span><span id="outCommission">₹0.00</span></div>
+      <div class="line"><span>GST on Charges @18%</span><span id="outGst">₹0.00</span></div>
+      <div class="line"><span>TCS (SP/1.18 × 0.50%)</span><span id="outTcs">₹0.00</span></div>
+      <div class="line"><span>TDS (SP/1.18 × 0.10%)</span><span id="outTds">₹0.00</span></div>
+
+      <div class="line total">
+        <span>Estimated Bank Settlement</span>
+        <div class="settle-center">
+          <span id="outSettlement">₹0.00</span>
+          <img id="genieImg" src="" alt="Genie">
+        </div>
+        <span></span>
+      </div>
+      <span id="imgErr" class="warn">(One or more images failed to load)</span>
+    </div>
+
+    <div class="note">
+      Rules:<br>
+      • If Listing ≤ 1000 → SP = Listing − 144<br>
+      • If 1001 ≤ Listing ≤ 2500 → SP = Listing − 237<br>
+      • If Listing ≥ 2501 → SP = Listing − 575<br>
+      Commission = 5% of SP <u>if Listing &gt; 1000</u>, else 2.5% of SP.<br>
+      <b>F-Assured:</b> Commission = 0, Pick &amp; Pack = ₹14, GST @18% on (5 + 14).<br>
+      Settlement = SP − Fixed − Commission/P&amp;P − GST − TCS − TDS.
+    </div>
+  </div>
+</div>
+
+<script>
+  const IMG = {
+    heart:  'https://www.dropbox.com/scl/fi/q6pw8kdt75rovnze1suf4/222.gif?rlkey=qq9n0uuvz3pvsdgh4d3yjma19&dl=0',
+    between:'https://www.dropbox.com/scl/fi/eb73zzazggmhsfv3uuriy/aladdin-genie.gif?rlkey=s3763msx88uvwngu6oxwyffre&dl=0',
+    small:  'https://www.dropbox.com/scl/fi/6tsw3cnr5v7zdkhebmxvx/genie.gif?rlkey=yphwnuq5gjl7mvfbsf5er7pcm&dl=0',
+    pane:   'https://www.dropbox.com/scl/fi/6bcprag66bn5meq1a0bi6/genie-aladdin.gif?rlkey=slceszci1wu8v6nv3z5ar6iyg&dl=0',
+    logo:   'https://www.dropbox.com/scl/fi/cwx19kj1edsiul3jimycp/logo.png?rlkey=b0jzavbw7jmh0v158z3r0plvr&dl=0'
+  };
+
+  function toRaw(url){
+    try{
+      const u = new URL(url);
+      if (u.hostname.includes('dropbox.com')) {
+        u.searchParams.delete('dl');
+        u.searchParams.set('raw','1');
+      }
+      return u.toString();
+    }catch{ return url; }
+  }
+
+  function wireImages(){
+    const missing = [];
+    const set = (sel, url) => {
+      const node = document.querySelector(sel);
+      if (!node) return;
+      const raw = toRaw(url);
+      node.dataset.base = raw;
+      node.src = raw;
+      node.addEventListener('error', ()=> missing.push(raw));
+    };
+    set('.logo',      IMG.logo);
+    set('#heartGif',  IMG.heart);
+    set('#aladdinGif',IMG.between);
+    set('#paneGif',   IMG.pane);
+    set('#genieImg',  IMG.small);
+
+    setTimeout(()=>{ if (missing.length) document.getElementById('imgErr').style.display='inline'; }, 120);
+  }
+
+  const fmt = n => (isNaN(n)||!isFinite(n)) ? "₹0.00" :
+    new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(n);
+  const el = id => document.getElementById(id);
+
+  function sellingFromListing(lp){
+    if (lp > 2500) {
+      return lp - 575;
+    } else if (lp > 1000) {
+      return lp - 237;
+    } else {
+      return lp - 144;
+    }
+  }
+
+  function listingFromSelling(sp){
+    const lp1 = sp + 144;
+    if (lp1 <= 1000) return lp1;
+
+    const lp2 = sp + 237;
+    if (lp2 <= 2500) return lp2;
+
+    return sp + 575;
+  }
+
+  let paneTimer = null;
+
+  function playPaneGif(ms){
+    const pane = el('pane');
+    const oldImg = el('paneGif');
+    const base = oldImg.dataset.base || oldImg.src;
+
+    const newImg = oldImg.cloneNode(true);
+    newImg.style.display = 'block';
+    newImg.addEventListener('load', () => {
+      pane.classList.add('pane-playing');
+
+      if (paneTimer) clearTimeout(paneTimer);
+      paneTimer = setTimeout(() => {
+        pane.classList.remove('pane-playing');
+        newImg.style.display = 'none';
+      }, ms);
+    }, { once:true });
+
+    oldImg.replaceWith(newImg);
+    newImg.src = base;
+
+    setTimeout(() => {
+      if (newImg.complete && newImg.naturalWidth > 0) return;
+      pane.classList.add('pane-playing');
+      if (paneTimer) clearTimeout(paneTimer);
+      paneTimer = setTimeout(() => {
+        pane.classList.remove('pane-playing');
+        newImg.style.display = 'none';
+      }, ms);
+    }, 300);
+  }
+
+  function updateModeUI(){
+    const mode = document.querySelector('input[name="mode"]:checked').value;
+    const label = el('priceLabel');
+    label.textContent = (mode === 'LP') ? 'Listing Price (₹)' : 'Selling Price (₹)';
+    el('priceInput').placeholder = (mode === 'LP') ? 'Enter listing price' : 'Enter selling price';
+  }
+
+  function compute(){
+    const mode = document.querySelector('input[name="mode"]:checked').value;
+    const val = parseFloat(el('priceInput').value || '0');
+    const isFAssured = el('fAssured').checked;
+
+    let lp, sp;
+    if (mode === 'LP') {
+      lp = val;
+      sp = sellingFromListing(lp);
+    } else {
+      sp = val;
+      lp = listingFromSelling(sp);
+    }
+
+    const fixed = 5;
+    let commission = 0;
+    let gst = 0;
+
+    if (isFAssured){
+      const pickPack = 14;
+      el('commLabel').textContent = 'Pick & Pack (F-Assured) ₹14.00';
+      commission = pickPack; // treat as charge
+      gst = (fixed + pickPack) * 0.18;
+    } else {
+      const commissionRate = lp > 1000 ? 0.05 : 0.025;
+      const commissionPct = (commissionRate * 100).toFixed(1);
+      el('commLabel').textContent = `Commission (${commissionPct}% of SP)`;
+      commission = sp * commissionRate;
+      gst = (fixed + commission) * 0.18;
+    }
+
+    const tcs = (sp / 1.18) * 0.005;
+    const tds = (sp / 1.18) * 0.001;
+    const settlement = sp - fixed - commission - gst - tcs - tds;
+
+    el('outLP').textContent   = fmt(lp);
+    el('outSP').textContent   = fmt(sp);
+    el('outFixed').textContent= fmt(fixed);
+    el('outCommission').textContent = fmt(commission);
+    el('outGst').textContent  = fmt(gst);
+    el('outTcs').textContent  = fmt(tcs);
+    el('outTds').textContent  = fmt(tds);
+    el('outSettlement').textContent = fmt(settlement);
+
+    if (Math.abs(settlement) > 0.005){
+      playPaneGif(3000);
+      el('genieImg').classList.add('show');
+    } else {
+      el('genieImg').classList.remove('show');
+    }
+  }
+
+  function clearOutputs(){
+    ['outLP','outSP','outFixed','outCommission','outGst','outTcs','outTds','outSettlement']
+      .forEach(id => el(id).textContent = fmt(0));
+  }
+
+  function resetUI(){
+    el('priceInput').value = 0;
+    el('fAssured').checked = false;
+    clearOutputs();
+    el('genieImg').classList.remove('show');
+    const gif = el('paneGif'); gif.style.display = 'none';
+    el('pane').classList.remove('pane-playing');
+    el('commLabel').textContent = 'Commission (5% of SP)';
+  }
+
+  document.getElementById('calcBtn').addEventListener('click', compute);
+  document.getElementById('resetBtn').addEventListener('click', resetUI);
+  el('priceInput').addEventListener('keydown', e => { if (e.key === 'Enter') compute(); });
+  document.getElementById('modeBox').addEventListener('change', updateModeUI);
+  el('fAssured').addEventListener('change', compute);
+
+  wireImages();
+  updateModeUI();
+  resetUI();
+</script>
+</body>
+</html>
