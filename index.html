@@ -385,12 +385,27 @@
   }
 
   let paneTimer = null;
-  function playPaneGif(ms){
+  /*function playPaneGif(ms){
     const pane = el('pane');
     pane.classList.add('pane-playing');
     if (paneTimer) clearTimeout(paneTimer);
     paneTimer = setTimeout(() => { pane.classList.remove('pane-playing'); }, ms);
-  }
+  }*/
+  function playPaneGif(ms){
+  const pane = el('pane');
+  const gif  = el('paneGif');
+
+  pane.classList.add('pane-playing');
+  gif.style.display = 'block';   // 🔥 KEY FIX
+
+  if (paneTimer) clearTimeout(paneTimer);
+
+  paneTimer = setTimeout(() => {
+    pane.classList.remove('pane-playing');
+    gif.style.display = 'none';  // 🔥 cleanup
+  }, ms);
+}
+
 
   function updateModeUI(){
     const mode = document.querySelector('input[name="mode"]:checked').value;
@@ -873,4 +888,5 @@
 </script>
 </body>
 </html>
+
 
