@@ -616,7 +616,6 @@
   // If value < 1, it's already decimal (0.15), use as-is
   return num >= 1 ? num / 100 : num;
 };
-        
         const readNumber = (val) => {
           if (val == null || val === '') return null;
           const str = val.toString().trim().replace(/^["']|["']$/g, '');
@@ -870,5 +869,3 @@
 </script>
 </body>
 </html>
-
-
