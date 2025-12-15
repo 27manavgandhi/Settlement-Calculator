@@ -608,12 +608,18 @@
           return isNaN(num) ? null : num / 100;
         };
         
-        const readNumber = (val) => {
+        /*const readNumber = (val) => {
           if (val == null || val === '') return null;
           const str = val.toString().trim().replace(/^["']|["']$/g, '');
           const num = parseFloat(str);
           return isNaN(num) ? null : num;
-        };
+        };*/const readNumber = (val) => {
+  if (val == null || val === '') return null;
+  const str = val.toString().trim().replace(/^["']|["']$/g, '');
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+};
+      
 
       const readNumber = (parts, idx) => {
         if (idx === -1 || !parts[idx]) return null;
@@ -861,3 +867,4 @@
 </script>
 </body>
 </html>
+
