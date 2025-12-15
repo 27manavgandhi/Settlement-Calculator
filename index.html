@@ -422,7 +422,7 @@
     return skuData[lastDate][typeKey] || null;
   }
 
- /* async function compute(){
+  async function compute(){
     // Auto-fetch if no data loaded
     if (Object.keys(commissionData).length === 0) {
       const success = await fetchFromGoogleSheets();
@@ -505,85 +505,7 @@
       el('genieImg').classList.remove('show');
     }
   }
-*/
-  function compute(){
-    const mode = document.querySelector('input[name="mode"]:checked').value;
-    const val = parseFloat(el('priceInput').value || '0');
-    const isFAssured = el('fAssured').checked;
-    const tier = currentTier;
-    const date = el('dateInput').value || currentDate;
 
-    let lp, sp;
-    if (mode === 'LP') {
-      lp = val;
-      sp = sellingFromListing(lp);
-    } else {
-      sp = val;
-      lp = listingFromSelling(sp);
-    }
-
-    // defaults
-    let commissionPct = lp > 1500 ? 0.05 : 0.025;
-    let fixedFee = 5;
-    let dateInfo = '';
-
-    const rateBlock = getRateBlock(selectedModel, date, isFAssured);
-    if (rateBlock){
-      if (typeof rateBlock.commission === 'number' && !isNaN(rateBlock.commission)){
-        commissionPct = rateBlock.commission; // decimal
-      }
-      if (rateBlock.fixed && rateBlock.fixed[tier] != null &&
-          !isNaN(rateBlock.fixed[tier])) {
-        // even if 0, override default 5
-        fixedFee = rateBlock.fixed[tier];
-      }
-      const skuData = commissionData[selectedModel];
-      if (skuData){
-        const dates = Object.keys(skuData).sort();
-        let used = null;
-        if (skuData[date]) used = date;
-        else {
-          for (const d of dates){ if (d <= date) used = d; }
-          if (!used) used = dates[dates.length-1];
-        }
-        if (used) dateInfo = ` (Rate as of ${formatDateForDisplay(used)})`;
-      }
-    }
-
-    const commissionAmt = sp * commissionPct;
-    const pickPack = isFAssured ? 14 : 0;
-    const commissionDisplay = commissionAmt + pickPack;
-
-    const gstBase = fixedFee + commissionAmt + pickPack;
-    const gst = gstBase * 0.18;
-    const tcs = (sp / 1.18) * 0.005;
-    const tds = (sp / 1.18) * 0.001;
-    const settlement = sp - fixedFee - commissionAmt - pickPack - gst - tcs - tds;
-
-    if (isFAssured){
-      el('commLabel').textContent =
-        `F-Assured Commission (${(commissionPct*100).toFixed(2)}% of SP) + Pick & Pack ₹14${dateInfo}`;
-    } else {
-      el('commLabel').textContent =
-        `Commission (${(commissionPct*100).toFixed(2)}% of SP)${dateInfo}`;
-    }
-
-    el('outLP').textContent   = fmt(lp);
-    el('outSP').textContent   = fmt(sp);
-    el('outFixed').textContent= fmt(fixedFee);          // ONLY fixed fee, no P&P
-    el('outCommission').textContent = fmt(commissionDisplay); // Commission + P&P for FA
-    el('outGst').textContent  = fmt(gst);
-    el('outTcs').textContent  = fmt(tcs);
-    el('outTds').textContent  = fmt(tds);
-    el('outSettlement').textContent = fmt(settlement);
-
-    if (Math.abs(settlement) > 0.005){
-      playPaneGif(3000);
-      el('genieImg').classList.add('show');
-    } else {
-      el('genieImg').classList.remove('show');
-    }
-  }
   function clearOutputs(){
     ['outLP','outSP','outFixed','outCommission','outGst','outTcs','outTds','outSettlement']
       .forEach(id => el(id).textContent = fmt(0));
@@ -679,21 +601,12 @@
 
       const defaultDate = currentDate;
 
-      /*const readPercent = (val) => {
+      const readPercent = (val) => {
           if (!val) return null;
           const str = val.toString().trim().replace(/^["']|["']$/g, '').replace(/[%\s]/g, '');
           const num = parseFloat(str);
           return isNaN(num) ? null : num / 100;
-        };*/
-        const readPercent = (val) => {
-        if (!val) return null;
-        const str = val.toString().replace(/[%\s]/g, '');
-        const num = parseFloat(str);
-        if (isNaN(num)) return null;
-        // If value >= 1, it's percentage format (15), divide by 100
-        // If value < 1, it's already decimal (0.15), use as-is
-       return num >= 1 ? num / 100 : num;
-       }; 
+        };
         
         const readNumber = (val) => {
           if (val == null || val === '') return null;
@@ -948,7 +861,4 @@
 </script>
 </body>
 </html>
-
-
-
 
