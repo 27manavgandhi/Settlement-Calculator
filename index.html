@@ -744,12 +744,24 @@
         }
         uniqueDates.add(rateDate);
         
-        const readPercent = (val) => {
+        /*const readPercent = (val) => {
           if (!val) return null;
           const str = val.toString().replace(/[%\s]/g, '');
           const num = parseFloat(str);
           return isNaN(num) ? null : num / 100;
-        };
+        };*/
+        const readPercent = (val) => {
+  if (val == null || val === '') return null;
+
+  let num = parseFloat(val.toString().replace(/[%\s]/g, ''));
+
+  if (isNaN(num)) return null;
+
+  // If value is already a decimal (e.g. 0.05), keep it
+  // If value is percentage (e.g. 5 or 7), convert to decimal
+  return num > 1 ? num / 100 : num;
+};
+
         
         const readNumber = (val) => {
           if (val == null || val === '') return null;
@@ -861,3 +873,4 @@
 </script>
 </body>
 </html>
+
