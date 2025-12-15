@@ -601,14 +601,19 @@
 
       const defaultDate = currentDate;
 
-      const readPercent = (parts, idx) => {
-        if (idx === -1 || !parts[idx]) return null;
-        const raw = parts[idx].toString().trim().replace(/^["']|["']$/g,'');
-        if (!raw) return null;
-        const cleaned = raw.replace(/[%\s]/g,'');
-        const num = parseFloat(cleaned);
-        return isNaN(num) ? null : num/100;
-      };
+      const readPercent = (val) => {
+          if (!val) return null;
+          const str = val.toString().trim().replace(/^["']|["']$/g, '').replace(/[%\s]/g, '');
+          const num = parseFloat(str);
+          return isNaN(num) ? null : num / 100;
+        };
+        
+        const readNumber = (val) => {
+          if (val == null || val === '') return null;
+          const str = val.toString().trim().replace(/^["']|["']$/g, '');
+          const num = parseFloat(str);
+          return isNaN(num) ? null : num;
+        };
 
       const readNumber = (parts, idx) => {
         if (idx === -1 || !parts[idx]) return null;
@@ -856,4 +861,5 @@
 </script>
 </body>
 </html>
+
 
