@@ -462,6 +462,7 @@
     // defaults
     let commissionPct = lp > 1500 ? 0.05 : 0.025;
     let fixedFee = 5;
+    let collectionFeePct = 0;
     let dateInfo = '';
 
     const rateBlock = getRateBlock(selectedModel, date, isFAssured);
@@ -474,8 +475,7 @@
         // even if 0, override default 5
         fixedFee = rateBlock.fixed[tier];
       }
-      let collectionFeePct = 0;
-      if (rateBlock && typeof rateBlock.collectionFee === 'number' && !isNaN(rateBlock.collectionFee)) {
+      if (typeof rateBlock.collectionFee === 'number' && !isNaN(rateBlock.collectionFee)) {
         collectionFeePct = rateBlock.collectionFee;
       }
       const skuData = commissionData[selectedModel];
