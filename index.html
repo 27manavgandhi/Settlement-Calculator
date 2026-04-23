@@ -212,6 +212,7 @@
       <hr style="border:none;border-top:1px dashed #cbd5e1;">
       <div class="line"><span>Fixed Fee (Tier)</span><span id="outFixed">₹5.00</span></div>
       <div class="line"><span id="commLabel">Commission (5% of SP)</span><span id="outCommission">₹0.00</span></div>
+      <div class="line"><span id="collectionLabel">Collection Fee</span><span id="outCollection">₹0.00</span></div>
       <div class="line"><span>GST on Charges @18%</span><span id="outGst">₹0.00</span></div>
       <div class="line"><span>TCS (SP/1.18 × 0.50%)</span><span id="outTcs">₹0.00</span></div>
       <div class="line"><span>TDS (SP/1.18 × 0.10%)</span><span id="outTds">₹0.00</span></div>
@@ -473,6 +474,10 @@
         // even if 0, override default 5
         fixedFee = rateBlock.fixed[tier];
       }
+      let collectionFeePct = 0;
+      if (rateBlock && typeof rateBlock.collectionFee === 'number' && !isNaN(rateBlock.collectionFee)) {
+        collectionFeePct = rateBlock.collectionFee;
+      }
       const skuData = commissionData[selectedModel];
       if (skuData){
         const dates = Object.keys(skuData).sort();
@@ -489,12 +494,13 @@
     const commissionAmt = sp * commissionPct;
     const pickPack = isFAssured ? 14 : 0;
     const commissionDisplay = commissionAmt + pickPack;
+    const collectionFeeAmt = sp * collectionFeePct;
 
-    const gstBase = fixedFee + commissionAmt + pickPack;
+    const gstBase = fixedFee + commissionAmt + pickPack + collectionFeeAmt;
     const gst = gstBase * 0.18;
     const tcs = (sp / 1.18) * 0.005;
     const tds = (sp / 1.18) * 0.001;
-    const settlement = sp - fixedFee - commissionAmt - pickPack - gst - tcs - tds;
+    const settlement = sp - fixedFee - commissionAmt - pickPack - collectionFeeAmt - gst - tcs - tds;
 
     if (isFAssured){
       el('commLabel').textContent =
@@ -508,6 +514,7 @@
     el('outSP').textContent   = fmt(sp);
     el('outFixed').textContent= fmt(fixedFee);          // ONLY fixed fee, no P&P
     el('outCommission').textContent = fmt(commissionDisplay); // Commission + P&P for FA
+    el('outCollection').textContent = fmt(collectionFeeAmt);
     el('outGst').textContent  = fmt(gst);
     el('outTcs').textContent  = fmt(tcs);
     el('outTds').textContent  = fmt(tds);
@@ -522,7 +529,7 @@
   }
 
   function clearOutputs(){
-    ['outLP','outSP','outFixed','outCommission','outGst','outTcs','outTds','outSettlement']
+    ['outLP','outSP','outFixed','outCommission','outCollection','outGst','outTcs','outTds','outSettlement']
       .forEach(id => el(id).textContent = fmt(0));
   }
 
@@ -800,17 +807,28 @@
           gold: readNumber(row['FBF_Gold']),
           diamond: readNumber(row['FBF_Dimond'])
         };
+
+        const readCollectionFee = (val) => {
+          if (val == null || val === '') return 0;
+          const num = parseFloat(val.toString().replace(/[%\s]/g, ''));
+          if (isNaN(num)) return 0;
+          return num > 1 ? num / 100 : num;
+        };
+        
+        const collectionFee = readCollectionFee(row['Collection_Fee']);
         
         if (!commissionData[sku]) commissionData[sku] = {};
         if (!commissionData[sku][rateDate]) commissionData[sku][rateDate] = {};
         
         commissionData[sku][rateDate].nfbf = {
           commission: nfbfComm,
-          fixed: nfbfFixed
+          fixed: nfbfFixed,
+          collectionFee: collectionFee
         };
         commissionData[sku][rateDate].fbf = {
           commission: fbfComm,
-          fixed: fbfFixed
+          fixed: fbfFixed,
+          collectionFee: collectionFee
         };
         
         rowCount++;
