@@ -212,7 +212,6 @@
       <hr style="border:none;border-top:1px dashed #cbd5e1;">
       <div class="line"><span>Fixed Fee (Tier)</span><span id="outFixed">₹5.00</span></div>
       <div class="line"><span id="commLabel">Commission (5% of SP)</span><span id="outCommission">₹0.00</span></div>
-      <div class="line"><span>Collection Fee</span><span id="outCollectionFee">₹0.00</span></div>
       <div class="line"><span>GST on Charges @18%</span><span id="outGst">₹0.00</span></div>
       <div class="line"><span>TCS (SP/1.18 × 0.50%)</span><span id="outTcs">₹0.00</span></div>
       <div class="line"><span>TDS (SP/1.18 × 0.10%)</span><span id="outTds">₹0.00</span></div>
@@ -462,14 +461,10 @@
     // defaults
     let commissionPct = lp > 1500 ? 0.05 : 0.025;
     let fixedFee = 5;
-    let collectionPct = 0;
     let dateInfo = '';
 
     const rateBlock = getRateBlock(selectedModel, date, isFAssured);
     if (rateBlock){
-      if (rateBlock.collection != null && !isNaN(rateBlock.collection)) {
-         collectionPct = rateBlock.collection;
-      }
       if (typeof rateBlock.commission === 'number' && !isNaN(rateBlock.commission)){
         commissionPct = rateBlock.commission; // decimal
       }
@@ -492,17 +487,14 @@
     }
 
     const commissionAmt = sp * commissionPct;
-    const collectionFee = sp * collectionPct;
     const pickPack = isFAssured ? 14 : 0;
     const commissionDisplay = commissionAmt + pickPack;
 
-  //  const gstBase = fixedFee + commissionAmt + pickPack;
-    const gstBase = fixedFee + commissionAmt + pickPack + collectionFee;
+    const gstBase = fixedFee + commissionAmt + pickPack;
     const gst = gstBase * 0.18;
     const tcs = (sp / 1.18) * 0.005;
     const tds = (sp / 1.18) * 0.001;
-   // const settlement = sp - fixedFee - commissionAmt - pickPack - gst - tcs - tds;
-    const settlement = sp - fixedFee - commissionAmt - pickPack - collectionFee - gst - tcs - tds;
+    const settlement = sp - fixedFee - commissionAmt - pickPack - gst - tcs - tds;
 
     if (isFAssured){
       el('commLabel').textContent =
@@ -516,7 +508,6 @@
     el('outSP').textContent   = fmt(sp);
     el('outFixed').textContent= fmt(fixedFee);          // ONLY fixed fee, no P&P
     el('outCommission').textContent = fmt(commissionDisplay); // Commission + P&P for FA
-    el('outCollectionFee').textContent = fmt(collectionFee);
     el('outGst').textContent  = fmt(gst);
     el('outTcs').textContent  = fmt(tcs);
     el('outTds').textContent  = fmt(tds);
@@ -531,8 +522,7 @@
   }
 
   function clearOutputs(){
-   // ['outLP','outSP','outFixed','outCommission','outGst','outTcs','outTds','outSettlement']
-    ['outLP','outSP','outFixed','outCommission','outCollectionFee','outGst','outTcs','outTds','outSettlement']  
+    ['outLP','outSP','outFixed','outCommission','outGst','outTcs','outTds','outSettlement']
       .forEach(id => el(id).textContent = fmt(0));
   }
 
@@ -793,12 +783,6 @@
           const num = parseFloat(val);
           return isNaN(num) ? null : num;
         };
-
-        const readCollection = (val) => {
-          if (val == null || val === '') return 0;
-          const num = parseFloat(val);
-          return isNaN(num) ? 0 : num;
-        };
         
         const nfbfComm = readPercent(row['NFBF_Comm']);
         const fbfComm = readPercent(row['FBF_Comm']);
@@ -823,12 +807,10 @@
         commissionData[sku][rateDate].nfbf = {
           commission: nfbfComm,
           fixed: nfbfFixed
-          collection: readCollection(row['Collection_Fee']) // or column N name
         };
         commissionData[sku][rateDate].fbf = {
           commission: fbfComm,
           fixed: fbfFixed
-          collection: readCollection(row['Collection_Fee'])
         };
         
         rowCount++;
